@@ -1,0 +1,25 @@
+[package]
+authors = ["Ana Hobden <ana@hoverbear.org>", "John Baublitz <john.m.baublitz@gmail.com", "Zhangyc <jerrybaixy@gmail.com"]
+description = """
+For personal projects using this crate, it is recommended to stick with the original getset crate.
+As an extension to the original crate, we've introduced a new method: get_clone.
+Methods without an explicit visibility specifier are automatically declared as pub. This is a conscious design choice, as internal methods typically don't necessitate getset mechanisms.
+"""
+edition = "2018"
+license = "MIT"
+name = "zyc_getset"
+version = "0.0.2"
+
+categories = ["development-tools::procedural-macro-helpers"]
+keywords = ["macro", "getter", "setter", "getters", "setters"]
+readme = "README.md"
+repository = "https://github.com/jerrybaxia/zyc_getset.git"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+proc-macro-error2 = "2"
+proc-macro2 = {version = "1", default-features = false}
+quote = "1"
+syn = "2"
