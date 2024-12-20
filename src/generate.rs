@@ -1,7 +1,8 @@
 use proc_macro2::{Ident, Span, TokenStream as TokenStream2};
 use proc_macro_error2::abort;
 use syn::{
-    self, ext::IdentExt, spanned::Spanned, Expr, Field, Lit, Meta, MetaNameValue, Visibility,
+    self, ext::IdentExt, spanned::Spanned, Expr, Field, GenericArgument, Lit, Meta, MetaNameValue,
+    PathArguments, Type, TypePath, Visibility,
 };
 
 use self::GenMode::{Get, GetClone, GetCopy, GetMut, Set};
@@ -150,7 +151,19 @@ pub fn implement(field: &Field, params: &GenParams) -> TokenStream2 {
             Span::call_site(),
         )
     };
-    let ty = field.ty.clone();
+    let ty = field.ty.clone(); // 获取字段的类型
+                               // 生成 ty_get_name 作为 TokenStream
+    let ty_get_name = if let Some(inner_ty) = extract_option_type(&ty) {
+        quote! { Option<&#inner_ty> }
+    } else {
+        quote! { &#ty }
+    };
+
+    let ty_get_return = if extract_option_type(&ty).is_some() {
+        quote! { self.#field_name.as_ref() }
+    } else {
+        quote! { &self.#field_name }
+    };
 
     let doc = field.attrs.iter().filter(|v| v.meta.path().is_ident("doc"));
 
@@ -179,8 +192,8 @@ pub fn implement(field: &Field, params: &GenParams) -> TokenStream2 {
                 quote! {
                     #(#doc)*
                     #[inline(always)]
-                    #visibility fn #fn_name(&self) -> &#ty {
-                        &self.#field_name
+                    #visibility fn #fn_name(&self) -> #ty_get_name {
+                        #ty_get_return
                     }
                 }
             }
@@ -224,4 +237,20 @@ pub fn implement(field: &Field, params: &GenParams) -> TokenStream2 {
         },
         None => quote! {},
     }
+}
+fn extract_option_type(ty: &Type) -> Option<&Type> {
+    if let Type::Path(TypePath { path, .. }) = ty {
+        if let Some(segment) = path.segments.last() {
+            if segment.ident == "Option" {
+                if let PathArguments::AngleBracketed(ref args) = segment.arguments {
+                    for arg in args.args.iter() {
+                        if let GenericArgument::Type(inner_ty) = arg {
+                            return Some(inner_ty);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    None
 }

@@ -1,14 +1,14 @@
 [package]
 authors = ["Ana Hobden <ana@hoverbear.org>", "John Baublitz <john.m.baublitz@gmail.com", "Zhangyc <jerrybaixy@gmail.com"]
 description = """
-For personal projects using this crate, it is recommended to stick with the original getset crate.
-As an extension to the original crate, we've introduced a new method: get_clone.
-Methods without an explicit visibility specifier are automatically declared as pub. This is a conscious design choice, as internal methods typically don't necessitate getset mechanisms.
+The current 'crate' is an extension to 'getset'.
+Mainly added 'get_clone' to return cloned objects of fields,
+Return 'Option<&T>' for 'Option<T>', and the method defaults to the 'pub' level.
 """
 edition = "2018"
 license = "MIT"
 name = "zyc_getset"
-version = "0.0.2"
+version = "0.0.3"
 
 categories = ["development-tools::procedural-macro-helpers"]
 keywords = ["macro", "getter", "setter", "getters", "setters"]
