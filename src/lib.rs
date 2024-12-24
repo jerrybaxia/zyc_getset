@@ -181,6 +181,7 @@ extern crate quote;
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
 use proc_macro_error2::{abort, abort_call_site, proc_macro_error};
+use quote::ToTokens;
 use syn::{parse_macro_input, spanned::Spanned, DataStruct, DeriveInput, Meta, Token};
 
 use crate::generate::{GenMode, GenParams};
@@ -274,19 +275,30 @@ fn parse_attr(attr: &syn::Attribute, mode: GenMode) -> Option<syn::Meta> {
                     abort!(meta.path().span(), "unknown setter or getter")
                 }
             })
+            // 使用 fold 方法处理一系列的 meta 数据，目的是根据特定规则对 meta 进行分类和收集
             .fold(
-                (None, None, Vec::new()),
+                (None, None, Vec::new()), // 初始化折叠状态，包含三个元素：
+                // - last: 最后一个匹配 mode.name() 的 meta
+                // - skip: 跳过的 meta
+                // - collected: 收集到的其他 meta
                 |(last, skip, mut collected), meta| {
+                    // 定义了如何对每个 meta 进行处理
                     if meta.path().is_ident(mode.name()) {
-                        (Some(meta), skip, collected)
+                        // 如果当前 meta 匹配 mode.name()
+                        (Some(meta), skip, collected) // 更新 last 为当前 meta，其他保持不变
                     } else if meta.path().is_ident("skip") {
-                        (last, Some(meta), collected)
+                        // 如果当前 meta 标识为 "skip"
+                        (last, Some(meta), collected) // 更新 skip 为当前 meta，其他保持不变
                     } else {
-                        collected.push(meta);
-                        (last, skip, collected)
+                        // 对于其他 meta
+                        collected.push(meta); // 将当前 meta 添加到 collected 中
+                        (last, skip, collected) // 保持其他状态不变
                     }
                 },
             );
+        for item in collected.iter() {
+            println!("name:{:?}", item.path().get_ident().to_token_stream());
+        }
 
         if skip.is_some() {
             // Check if there is any setter or getter used with skip, which is

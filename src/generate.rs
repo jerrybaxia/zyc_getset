@@ -151,8 +151,19 @@ pub fn implement(field: &Field, params: &GenParams) -> TokenStream2 {
             Span::call_site(),
         )
     };
-    let ty = field.ty.clone(); // 获取字段的类型
-                               // 生成 ty_get_name 作为 TokenStream
+    let ty = field.ty.clone(); // 获取字段的类型 生成 ty_get_name 作为 TokenStream
+
+    // 判断是否为基础类型？如果是的话将 get 自动转为 getCopy
+    let mut mode = params.mode;
+    if mode == GenMode::Get
+        && (check_type_is_copy(&field.ty)
+            || extract_option_type(&field.ty)
+                .map_or(false, |inner_ty| check_type_is_copy(inner_ty)))
+    {
+        // 如果当前属性是 copy 类型，那么当 get 时，自动转为 getCopy
+        mode = GenMode::GetCopy;
+    }
+
     let ty_get_name = if let Some(inner_ty) = extract_option_type(&ty) {
         quote! { Option<&#inner_ty> }
     } else {
@@ -187,7 +198,7 @@ pub fn implement(field: &Field, params: &GenParams) -> TokenStream2 {
     match attr {
         // Generate nothing for skipped field
         Some(meta) if meta.path().is_ident("skip") => quote! {},
-        Some(_) => match params.mode {
+        Some(_) => match mode {
             GenMode::Get => {
                 quote! {
                     #(#doc)*
@@ -253,4 +264,32 @@ fn extract_option_type(ty: &Type) -> Option<&Type> {
         }
     }
     None
+}
+
+//
+fn check_type_is_copy(ty: &Type) -> bool {
+    match ty {
+        Type::Path(type_path) => {
+            let path = &type_path.path;
+            if path.segments.is_empty() {
+                return false;
+            }
+            let last_segment = path.segments.last().unwrap();
+            is_copy_ident(&last_segment.ident)
+        }
+        Type::Array(array_type) => check_type_is_copy(&*array_type.elem),
+        Type::Tuple(tuple_type) => tuple_type.elems.iter().all(check_type_is_copy),
+        Type::Group(group) => check_type_is_copy(&*group.elem),
+        Type::Paren(paren) => check_type_is_copy(&*paren.elem),
+        Type::BareFn(_) => true, // 函数指针默认实现了 Copy
+        _ => false,
+    }
+}
+
+fn is_copy_ident(ident: &Ident) -> bool {
+    match ident.to_string().as_str() {
+        "i8" | "i16" | "i32" | "i64" | "i128" | "u8" | "u16" | "u32" | "u64" | "u128" | "isize"
+        | "usize" | "f32" | "f64" | "bool" | "char" | "Copy" => true,
+        _ => false,
+    }
 }
