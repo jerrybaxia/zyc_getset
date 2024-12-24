@@ -1,14 +1,22 @@
 [package]
 authors = ["Ana Hobden <ana@hoverbear.org>", "John Baublitz <john.m.baublitz@gmail.com", "Zhangyc <jerrybaixy@gmail.com"]
 description = """
-The current 'crate' is an extension to 'getset'.
-Mainly added 'get_clone' to return cloned objects of fields,
-Return 'Option<&T>' for 'Option<T>', and the method defaults to the 'pub' level.
+当前 `crate`是对'getset' 的扩展。
+
+主要添加了 `get_clone`来返回字段的克隆对象，
+
+当为基础类型时 `get` 自动转为 `get_copy` ，
+
+当字段有自定义注解时，自动对 struct 的注解进行 `skip` ，
+
+当字段类型为 `Option<T>` 时，返回 `Option<&T>`，
+
+同时方法默认为 `pub`级别。
 """
 edition = "2018"
 license = "MIT"
 name = "zyc_getset"
-version = "0.0.3"
+version = "0.0.4"
 
 categories = ["development-tools::procedural-macro-helpers"]
 keywords = ["macro", "getter", "setter", "getters", "setters"]

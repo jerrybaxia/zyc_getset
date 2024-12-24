@@ -178,12 +178,13 @@ pub fn implement(field: &Field, params: &GenParams) -> TokenStream2 {
 
     let doc = field.attrs.iter().filter(|v| v.meta.path().is_ident("doc"));
 
+    // 取出是否有 skip
     let attr = field
         .attrs
         .iter()
         .filter_map(|v| parse_attr(v, params.mode))
-        .last()
-        .or_else(|| params.global_attr.clone());
+        .last() // 取出自定义注解
+        .or_else(|| params.global_attr.clone()); // 没有自定义注解时，使用 struct 全局注解
 
     let visibility = parse_visibility(attr.as_ref(), params.mode.name());
     // 添加以下代码，当visibility 为 None 时，或为 private ，则设置为 public
@@ -197,7 +198,9 @@ pub fn implement(field: &Field, params: &GenParams) -> TokenStream2 {
     // 以上是添加代码
     match attr {
         // Generate nothing for skipped field
-        Some(meta) if meta.path().is_ident("skip") => quote! {},
+        Some(meta) if meta.path().is_ident("skip") => {
+            quote! {}
+        }
         Some(_) => match mode {
             GenMode::Get => {
                 quote! {
@@ -287,6 +290,7 @@ fn check_type_is_copy(ty: &Type) -> bool {
 }
 
 fn is_copy_ident(ident: &Ident) -> bool {
+    // TODO 未能找到直接从类型T获取当前是否实现Copy trait的方法，这里写死了常用的基础数据类型。
     match ident.to_string().as_str() {
         "i8" | "i16" | "i32" | "i64" | "i128" | "u8" | "u16" | "u32" | "u64" | "u128" | "isize"
         | "usize" | "f32" | "f64" | "bool" | "char" | "Copy" => true,
